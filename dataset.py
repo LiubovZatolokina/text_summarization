@@ -8,8 +8,8 @@ from transformers import T5Tokenizer
 class ReviewDataset(Dataset):
     def __init__(self, file_path):
         self.dataset = pd.read_csv(file_path)
-        self.X = self.dataset.cleaned_text[:150]
-        self.y = self.dataset.cleaned_summary[:150]
+        self.X = self.dataset.cleaned_text
+        self.y = self.dataset.cleaned_summary
         self.source_len = 512
         self.summ_len = 128
         self.tokenizer = T5Tokenizer.from_pretrained('t5-small')
