@@ -1,20 +1,17 @@
 import time
 
-import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import T5ForConditionalGeneration
 
 from dataset import prepare_data_for_training
 
-tokenizer = T5Tokenizer.from_pretrained('t5-base')
-t5_model = T5ForConditionalGeneration.from_pretrained('t5-base')
+t5_model = T5ForConditionalGeneration.from_pretrained('t5-small')
 
 train_loader, test_loader = prepare_data_for_training()
 
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = 'cpu'
+device = "cuda" if torch.cuda.is_available() else "cpu"
 print(device)
 
 learning_rate = 1e-4
@@ -37,28 +34,18 @@ def train_model(model, dataloaders, optimizer, num_epochs, model_saving_path):
 
             running_loss = 0.0
 
-            for inputs, labels in dataloaders[phase]:
+            for _, data in enumerate(dataloaders_dict[phase], 0):
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == 'train'):
-                    source = tokenizer.batch_encode_plus(np.array(inputs), max_length=512, padding=True,
-                                                         pad_to_max_length=True, return_tensors='pt', truncation=True)
-                    target = tokenizer.batch_encode_plus(np.array(labels), max_length=128, pad_to_max_length=True,
-                                                         return_tensors='pt', truncation=True, padding=True)
-                    source.to(device)
-                    target.to(device)
 
-                    source_ids = source['input_ids'].squeeze()
-                    source_mask = source['attention_mask'].squeeze()
-                    target_ids = target['input_ids'].squeeze()
-                    # y_ids = target_ids[:, :-1].contiguous()
-                    # lm_labels = target_ids[:, 1:].clone().detach()
-                    # lm_labels[target_ids[:, 1:] == tokenizer.pad_token_id] = -100
-                    #target_mask = target['attention_mask'].squeeze()
-                    outputs = model(input_ids=source_ids.to(device), attention_mask=source_mask.to(device),
-                                    decoder_input_ids=target_ids.to(device))
-                    loss = outputs[0]
-                    running_loss += loss.item() * len(inputs[0])
+                    y = data['target_ids'].to(device, dtype=torch.long)
+                    ids = data['source_ids'].to(device, dtype=torch.long)
+
+                    outputs = model(input_ids=ids.to(device), labels=y.to(device))
+                    loss = outputs.loss
+                    running_loss += loss.item() * ids.shape[0]
+
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()

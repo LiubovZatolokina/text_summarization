@@ -1,0 +1,8 @@
+numpy==1.21.4
+torch
+torchtext==0.11.0
+tqdm==4.62.3
+transformers==4.12.5
+sentencepiece==0.1.96
+pandas==1.3.4
+tensorboard
